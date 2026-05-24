@@ -2,20 +2,20 @@
   "name": "Baseball Game Tracker",
   "short_name": "Game Tracker",
   "description": "Live baseball stats tracker for your player",
-  "start_url": "/index.html",
+  "start_url": "/baseball-tracker/index.html",
   "display": "standalone",
   "background_color": "#0f1b2d",
   "theme_color": "#0f1b2d",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/baseball-tracker/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "/baseball-tracker/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
