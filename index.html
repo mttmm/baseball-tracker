@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Game Tracker">
+<meta name="theme-color" content="#0f1b2d">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>⚾ Game Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:#0f1b2d; --navy2:#1a2e4a; --red:#d63031; --red2:#b71c1c;
+    --gold:#f9ca24; --green:#00b894; --white:#f8f9fa; --gray:#8395a7;
+    --card:#1e3050;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;background:var(--navy);font-family:'DM Sans',sans-serif;color:var(--white);overflow:hidden;touch-action:manipulation;}
+
+  .screen{display:none;height:100vh;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* ── SETUP ── */
+  #setup{align-items:center;justify-content:center;gap:22px;padding:36px 24px;background:linear-gradient(160deg,#0f1b2d 60%,#1a2e4a);overflow-y:auto;}
+  .logo-area{text-align:center;}
+  .logo-ball{font-size:58px;margin-bottom:6px;}
+  .logo-area h1{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:4px;line-height:1;}
+  .logo-area p{color:var(--gray);font-size:12px;letter-spacing:1px;margin-top:4px;}
+  .setup-card{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:500px;display:flex;flex-direction:column;gap:13px;}
+  .input-group label{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-bottom:5px;}
+  .input-group input{width:100%;background:var(--navy);border:2px solid var(--navy2);border-radius:10px;padding:13px 15px;font-family:'DM Sans',sans-serif;font-size:17px;color:var(--white);outline:none;transition:border-color .2s;}
+  .input-group input:focus{border-color:var(--gold);}
+  .input-group input::placeholder{color:#4a6278;}
+  .position-toggle{display:flex;gap:8px;}
+  .pos-btn{flex:1;padding:11px 6px;background:var(--navy);border:2px solid var(--navy2);border-radius:10px;color:var(--gray);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;text-align:center;}
+  .pos-btn.active{background:var(--gold);border-color:var(--gold);color:var(--navy);}
+  .start-btn{background:var(--red);color:white;border:none;border-radius:13px;padding:17px;font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:3px;cursor:pointer;transition:all .15s;margin-top:4px;}
+  .start-btn:active{background:var(--red2);transform:scale(.98);}
+  .sheets-setup-link{color:var(--gold);font-size:12px;text-align:center;cursor:pointer;text-decoration:underline;margin-top:-4px;}
+
+  /* ── MODAL ── */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;padding:22px;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:var(--card);border-radius:20px;padding:22px;width:100%;max-width:480px;display:flex;flex-direction:column;gap:13px;}
+  .modal h3{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;color:var(--gold);}
+  .modal p{font-size:13px;color:var(--gray);line-height:1.6;}
+  .modal input{width:100%;background:var(--navy);border:2px solid var(--navy2);border-radius:10px;padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--white);outline:none;}
+  .modal input:focus{border-color:var(--gold);}
+  .modal-btn-row{display:flex;gap:10px;}
+  .modal-btn{flex:1;padding:13px;border:none;border-radius:11px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;}
+  .modal-btn.save{background:var(--green);color:var(--navy);}
+  .modal-btn.cancel{background:var(--navy2);color:var(--gray);}
+  .modal-btn:active{opacity:.85;transform:scale(.98);}
+  .step-list{display:flex;flex-direction:column;gap:8px;}
+  .step-item{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--gray);line-height:1.5;}
+  .step-num{background:var(--navy);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--gold);flex-shrink:0;margin-top:1px;}
+
+  /* ── RESTORE BANNER ── */
+  .restore-banner{background:#f9ca2422;border:1.5px solid var(--gold);border-radius:12px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .restore-banner p{font-size:12px;color:var(--gold);}
+  .restore-banner p span{font-weight:700;}
+  .restore-row{display:flex;gap:7px;}
+  .restore-btn{padding:7px 13px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;}
+  .restore-btn.yes{background:var(--gold);color:var(--navy);}
+  .restore-btn.no{background:var(--navy2);color:var(--gray);}
+
+  /* ── TOP BAR ── */
+  .top-bar{background:var(--navy2);padding:11px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:2px solid rgba(255,255,255,.06);}
+  .top-bar-left{display:flex;flex-direction:column;}
+  .player-name-display{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:2px;line-height:1;}
+  .opp-display{font-size:10px;color:var(--gray);margin-top:2px;}
+  .inning-control{display:flex;align-items:center;gap:7px;}
+  .inn-label{font-size:10px;color:var(--gray);letter-spacing:1px;text-transform:uppercase;}
+  .inn-num{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);min-width:26px;text-align:center;line-height:1;}
+  .inn-btn{width:30px;height:30px;background:var(--card);border:none;border-radius:7px;color:var(--white);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .inn-btn:active{background:#2a4060;}
+  .end-game-btn{background:transparent;border:1.5px solid var(--gray);border-radius:8px;padding:5px 10px;color:var(--gray);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;}
+  .end-game-btn:active{border-color:var(--red);color:var(--red);}
+
+  /* ── TABS ── */
+  .tabs{display:flex;background:var(--navy2);border-bottom:2px solid rgba(255,255,255,.06);flex-shrink:0;}
+  .tab-btn{flex:1;padding:10px;background:transparent;border:none;color:var(--gray);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:.5px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;text-transform:uppercase;}
+  .tab-btn.active{color:var(--gold);border-bottom-color:var(--gold);}
+
+  /* ── PANELS ── */
+  .tab-panel{display:none;flex:1;overflow-y:auto;padding:13px;}
+  .tab-panel.active{display:block;}
+
+  /* ── AT-BAT ── */
+  .ab-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .ab-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--gray);}
+  .ab-title span{color:var(--gold);font-size:24px;}
+  .result-section-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:7px;margin-top:12px;}
+  .result-grid{display:grid;gap:7px;margin-bottom:2px;}
+  .result-grid.hits{grid-template-columns:repeat(4,1fr);}
+  .result-grid.outs{grid-template-columns:repeat(3,1fr);}
+  .result-grid.other{grid-template-columns:repeat(3,1fr);}
+  .result-btn{background:var(--card);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 5px;color:var(--white);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .result-btn .rb-icon{font-size:19px;}
+  .result-btn .rb-label{font-size:9px;color:var(--gray);font-weight:600;}
+  .result-btn:active{transform:scale(.96);}
+  .result-btn.hit{border-color:var(--green);}
+  .result-btn.hit.selected{background:var(--green);border-color:var(--green);color:var(--navy);}
+  .result-btn.hit.selected .rb-label{color:var(--navy);}
+  .result-btn.out.selected{background:var(--gray);border-color:var(--gray);color:var(--navy);}
+  .result-btn.out.selected .rb-label{color:var(--navy);}
+  .result-btn.walk{border-color:#74b9ff;}
+  .result-btn.walk.selected{background:#74b9ff;border-color:#74b9ff;color:var(--navy);}
+  .result-btn.walk.selected .rb-label{color:var(--navy);}
+  .result-btn.special{border-color:#fd79a8;}
+  .result-btn.special.selected{background:#fd79a8;border-color:#fd79a8;color:var(--navy);}
+  .result-btn.special.selected .rb-label{color:var(--navy);}
+
+  .extras-row{display:flex;gap:7px;margin-top:10px;}
+  .extra-counter{flex:1;background:var(--card);border-radius:12px;padding:10px 7px;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .extra-counter label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);}
+  .counter-controls{display:flex;align-items:center;gap:9px;}
+  .ctr-btn{width:32px;height:32px;background:var(--navy);border:none;border-radius:7px;color:var(--white);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .ctr-btn:active{background:#2a4060;}
+  .ctr-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);min-width:20px;text-align:center;line-height:1;}
+  .log-ab-btn{width:100%;margin-top:14px;background:var(--red);border:none;border-radius:13px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:3px;color:white;cursor:pointer;transition:all .15s;}
+  .log-ab-btn:active{background:var(--red2);transform:scale(.98);}
+  .log-ab-btn:disabled{background:#2a4060;color:var(--gray);}
+
+  /* ── STATS ── */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:10px;}
+  .stat-card{background:var(--card);border-radius:12px;padding:10px 6px;text-align:center;}
+  .stat-card .sc-val{font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--gold);line-height:1;}
+  .stat-card .sc-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-top:2px;}
+  .rate-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+  .rate-card{background:linear-gradient(135deg,var(--card),#0f1b2d);border:1.5px solid rgba(249,202,36,.2);border-radius:12px;padding:10px 6px;text-align:center;}
+  .rate-card .rc-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--gold);line-height:1;}
+  .rate-card .rc-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray);margin-top:2px;}
+  .ab-log-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--gray);margin-bottom:7px;}
+  .ab-log-list{display:flex;flex-direction:column;gap:6px;}
+  .ab-log-item{background:var(--card);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:11px;}
+  .ab-log-num{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--gray);min-width:18px;}
+  .ab-log-result{flex:1;font-weight:600;font-size:13px;}
+  .ab-log-extras{font-size:10px;color:var(--gray);}
+  .ab-log-inn{font-size:10px;color:var(--gray);background:var(--navy);border-radius:5px;padding:2px 6px;}
+
+  /* ── PITCHING ── */
+  .pitch-count-display{background:var(--card);border-radius:16px;padding:18px;text-align:center;margin-bottom:10px;}
+  .pitch-big{font-family:'Bebas Neue',sans-serif;font-size:68px;color:var(--gold);line-height:1;}
+  .pitch-big-label{font-size:10px;color:var(--gray);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .pitch-breakdown{display:flex;justify-content:center;gap:26px;margin-top:12px;}
+  .pb-item{text-align:center;}
+  .pb-val{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--white);}
+  .pb-label{font-size:9px;color:var(--gray);letter-spacing:1px;text-transform:uppercase;}
+  .pitch-btn-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px;}
+  .pitch-btn{padding:14px 7px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .pitch-btn .pb-icon{font-size:20px;}
+  .pitch-btn:active{transform:scale(.96);}
+  .pitch-btn.strike{background:var(--red);color:white;}
+  .pitch-btn.ball{background:#74b9ff22;color:#74b9ff;border:2px solid #74b9ff44;}
+  .pitch-btn.undo{background:#2a4060;color:var(--gray);}
+  .pitch-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .pitch-stat-card{background:var(--card);border-radius:12px;padding:10px 7px;text-align:center;}
+  .pitch-stat-card .psc-val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--white);line-height:1;}
+  .pitch-stat-card .psc-label{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray);margin-top:2px;}
+
+  /* ── HISTORY ── */
+  .history-list{display:flex;flex-direction:column;gap:8px;}
+  .history-item{background:var(--card);border-radius:12px;padding:13px 15px;}
+  .history-item-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .history-opp{font-weight:700;font-size:14px;}
+  .history-date{font-size:11px;color:var(--gray);}
+  .history-stats{display:flex;gap:14px;flex-wrap:wrap;}
+  .hs-item{font-size:12px;color:var(--gray);}
+  .hs-item span{color:var(--white);font-weight:700;}
+  .history-avg{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--gold);}
+  .no-history{color:var(--gray);font-size:14px;text-align:center;padding:30px 20px;}
+
+  /* ── SUMMARY ── */
+  #summary{background:linear-gradient(160deg,#0f1b2d 60%,#1a2e4a);overflow-y:auto;padding:26px 20px;gap:14px;}
+  .summary-header{text-align:center;}
+  .summary-header h2{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:4px;}
+  .summary-header p{color:var(--gray);font-size:12px;margin-top:3px;}
+  .summary-section{background:var(--card);border-radius:16px;padding:16px;}
+  .summary-section h3{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:3px;color:var(--gold);margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:7px;}
+  .summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .ss-item{text-align:center;}
+  .ss-val{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--white);}
+  .ss-label{font-size:9px;color:var(--gray);letter-spacing:1px;text-transform:uppercase;}
+  .share-row{display:flex;gap:8px;}
+  .share-btn{flex:1;padding:14px;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;transition:all .15s;}
+  .share-btn:active{opacity:.85;transform:scale(.98);}
+  .share-btn.copy{background:var(--green);color:var(--navy);}
+  .share-btn.sheets{background:white;color:#0f9d58;}
+  .share-btn.newgame{background:var(--red);color:white;}
+  .save-status{text-align:center;font-size:12px;padding:6px;border-radius:8px;display:none;}
+  .save-status.success{background:#00b89422;color:var(--green);display:block;}
+  .save-status.error{background:#d6303122;color:var(--red);display:block;}
+  .save-status.loading{background:#f9ca2422;color:var(--gold);display:block;}
+
+  .separator{height:1px;background:rgba(255,255,255,.06);margin:10px 0;}
+  .hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- SHEETS MODAL -->
+<div class="modal-overlay" id="sheetsModal">
+  <div class="modal">
+    <h3>📊 Connect Google Sheets</h3>
+    <p>Paste your Apps Script Web App URL and choose a secret token below.</p>
+    <div class="step-list">
+      <div class="step-item"><div class="step-num">1</div><div>Open your Google Sheet → Extensions → Apps Script</div></div>
+      <div class="step-item"><div class="step-num">2</div><div>Paste the provided script, set your token inside it → Save</div></div>
+      <div class="step-item"><div class="step-num">3</div><div>Deploy → New Deployment → Web App → Anyone → Deploy</div></div>
+      <div class="step-item"><div class="step-num">4</div><div>Copy the Web App URL and paste it here, use the same token</div></div>
+    </div>
+    <input type="url" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/...">
+    <div class="input-group" style="margin-top:4px">
+      <label>Secret Token</label>
+      <input type="text" id="tokenInput" placeholder="e.g. jake2026tigers" autocomplete="off" style="margin-top:0">
+      <p style="font-size:11px;color:var(--gray);margin-top:5px">Pick any word or phrase. Must match what's in your Apps Script. Enter the same token on each device you use.</p>
+    </div>
+    <div class="modal-btn-row">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn save" onclick="saveScriptUrl()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div id="setup" class="screen active">
+  <div class="logo-area">
+    <div class="logo-ball">⚾</div>
+    <h1>Game Tracker</h1>
+    <p>Live stats for your player</p>
+  </div>
+  <div class="setup-card">
+    <div class="restore-banner hidden" id="restoreBanner">
+      <div>
+        <p>Game in progress: <span id="restoreName">—</span></p>
+        <p style="font-size:11px;color:var(--gray);margin-top:2px">Resume where you left off?</p>
+      </div>
+      <div class="restore-row">
+        <button class="restore-btn yes" onclick="resumeGame()">Resume</button>
+        <button class="restore-btn no" onclick="discardSaved()">Discard</button>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Player Name</label>
+      <input type="text" id="playerName" placeholder="e.g. Jake" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>Opponent</label>
+      <input type="text" id="opponent" placeholder="e.g. Tigers" autocomplete="off">
+    </div>
+    <div class="input-group">
+      <label>Tracking</label>
+      <div class="position-toggle">
+        <button class="pos-btn active" data-pos="batting" onclick="selectPos(this)">🏏 Batting</button>
+        <button class="pos-btn" data-pos="both" onclick="selectPos(this)">⚾ Both</button>
+        <button class="pos-btn" data-pos="pitching" onclick="selectPos(this)">🥎 Pitching</button>
+      </div>
+    </div>
+    <button class="start-btn" onclick="startGame()">PLAY BALL →</button>
+    <div class="sheets-setup-link" onclick="openModal()">⚙️ <span id="sheetsStatusText">Connect Google Sheets</span></div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="screen">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="player-name-display" id="displayName">—</div>
+      <div class="opp-display" id="displayOpp">vs —</div>
+    </div>
+    <div class="inning-control">
+      <span class="inn-label">INN</span>
+      <button class="inn-btn" onclick="changeInning(-1)">−</button>
+      <span class="inn-num" id="inningNum">1</span>
+      <button class="inn-btn" onclick="changeInning(1)">+</button>
+    </div>
+    <button class="end-game-btn" onclick="endGame()">End Game</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('atbat',this)">At-Bat</button>
+    <button class="tab-btn" onclick="switchTab('stats',this)">Stats</button>
+    <button class="tab-btn pitching-tab hidden" onclick="switchTab('pitching',this)">Pitching</button>
+    <button class="tab-btn" onclick="switchTab('history',this)">History</button>
+  </div>
+
+  <!-- AT-BAT TAB -->
+  <div id="tab-atbat" class="tab-panel active">
+    <div class="ab-header">
+      <div class="ab-title">AT-BAT <span id="abNum">1</span></div>
+      <div style="font-size:11px;color:var(--gray)">Inning <span id="abInning">1</span></div>
+    </div>
+    <div class="result-section-label">HITS</div>
+    <div class="result-grid hits">
+      <button class="result-btn hit" onclick="selectResult(this,'1B')"><span class="rb-icon">🟢</span><span>1B</span><span class="rb-label">Single</span></button>
+      <button class="result-btn hit" onclick="selectResult(this,'2B')"><span class="rb-icon">🟡</span><span>2B</span><span class="rb-label">Double</span></button>
+      <button class="result-btn hit" onclick="selectResult(this,'3B')"><span class="rb-icon">🟠</span><span>3B</span><span class="rb-label">Triple</span></button>
+      <button class="result-btn hit" onclick="selectResult(this,'HR')"><span class="rb-icon">🔴</span><span>HR</span><span class="rb-label">Home Run</span></button>
+    </div>
+    <div class="result-section-label">OUTS</div>
+    <div class="result-grid outs">
+      <button class="result-btn out" onclick="selectResult(this,'K')"><span class="rb-icon">🌀</span><span>K</span><span class="rb-label">Swinging</span></button>
+      <button class="result-btn out" onclick="selectResult(this,'Kc')"><span class="rb-icon">👀</span><span>Kc</span><span class="rb-label">Looking</span></button>
+      <button class="result-btn out" onclick="selectResult(this,'GO')"><span class="rb-icon">⬇️</span><span>GO</span><span class="rb-label">Ground Out</span></button>
+      <button class="result-btn out" onclick="selectResult(this,'FO')"><span class="rb-icon">☁️</span><span>FO</span><span class="rb-label">Fly Out</span></button>
+      <button class="result-btn out" onclick="selectResult(this,'LO')"><span class="rb-icon">⚡</span><span>LO</span><span class="rb-label">Line Out</span></button>
+      <button class="result-btn out" onclick="selectResult(this,'FC')"><span class="rb-icon">🔄</span><span>FC</span><span class="rb-label">Fielder's Ch.</span></button>
+    </div>
+    <div class="result-section-label">OTHER</div>
+    <div class="result-grid other">
+      <button class="result-btn walk" onclick="selectResult(this,'BB')"><span class="rb-icon">🚶</span><span>BB</span><span class="rb-label">Walk</span></button>
+      <button class="result-btn special" onclick="selectResult(this,'HBP')"><span class="rb-icon">🤕</span><span>HBP</span><span class="rb-label">Hit by Pitch</span></button>
+      <button class="result-btn special" onclick="selectResult(this,'SAC')"><span class="rb-icon">🙏</span><span>SAC</span><span class="rb-label">Sacrifice</span></button>
+    </div>
+    <div class="extras-row">
+      <div class="extra-counter"><label>RBI</label><div class="counter-controls"><button class="ctr-btn" onclick="changeExtra('rbi',-1)">−</button><span class="ctr-val" id="rbiVal">0</span><button class="ctr-btn" onclick="changeExtra('rbi',1)">+</button></div></div>
+      <div class="extra-counter"><label>Stolen Base</label><div class="counter-controls"><button class="ctr-btn" onclick="changeExtra('sb',-1)">−</button><span class="ctr-val" id="sbVal">0</span><button class="ctr-btn" onclick="changeExtra('sb',1)">+</button></div></div>
+      <div class="extra-counter"><label>Run Scored</label><div class="counter-controls"><button class="ctr-btn" onclick="changeExtra('run',-1)">−</button><span class="ctr-val" id="runVal">0</span><button class="ctr-btn" onclick="changeExtra('run',1)">+</button></div></div>
+    </div>
+    <button class="log-ab-btn" id="logAbBtn" onclick="logAtBat()" disabled>SELECT A RESULT</button>
+  </div>
+
+  <!-- STATS TAB -->
+  <div id="tab-stats" class="tab-panel">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="sc-val" id="s-ab">0</div><div class="sc-label">AB</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-h">0</div><div class="sc-label">Hits</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-rbi">0</div><div class="sc-label">RBI</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-r">0</div><div class="sc-label">Runs</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-2b">0</div><div class="sc-label">2B</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-3b">0</div><div class="sc-label">3B</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-hr">0</div><div class="sc-label">HR</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-bb">0</div><div class="sc-label">BB</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-k">0</div><div class="sc-label">K</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-sb">0</div><div class="sc-label">SB</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-hbp">0</div><div class="sc-label">HBP</div></div>
+      <div class="stat-card"><div class="sc-val" id="s-sac">0</div><div class="sc-label">SAC</div></div>
+    </div>
+    <div class="rate-row">
+      <div class="rate-card"><div class="rc-val" id="s-avg">.000</div><div class="rc-label">AVG</div></div>
+      <div class="rate-card"><div class="rc-val" id="s-obp">.000</div><div class="rc-label">OBP</div></div>
+      <div class="rate-card"><div class="rc-val" id="s-slg">.000</div><div class="rc-label">SLG</div></div>
+    </div>
+    <div class="separator"></div>
+    <div class="ab-log-title">AT-BAT LOG</div>
+    <div class="ab-log-list" id="abLogList"><div style="color:var(--gray);font-size:14px;text-align:center;padding:20px">No at-bats yet</div></div>
+  </div>
+
+  <!-- PITCHING TAB -->
+  <div id="tab-pitching" class="tab-panel">
+    <div class="pitch-count-display">
+      <div class="pitch-big" id="totalPitches">0</div>
+      <div class="pitch-big-label">Total Pitches</div>
+      <div class="pitch-breakdown">
+        <div class="pb-item"><div class="pb-val" id="strikeCount" style="color:var(--red)">0</div><div class="pb-label">Strikes</div></div>
+        <div class="pb-item"><div class="pb-val" id="ballCount" style="color:#74b9ff">0</div><div class="pb-label">Balls</div></div>
+        <div class="pb-item"><div class="pb-val" id="strikePercent">–</div><div class="pb-label">Strike %</div></div>
+      </div>
+    </div>
+    <div class="pitch-btn-row">
+      <button class="pitch-btn strike" onclick="logPitch('strike')"><span class="pb-icon">🎯</span>Strike</button>
+      <button class="pitch-btn ball" onclick="logPitch('ball')"><span class="pb-icon">❌</span>Ball</button>
+      <button class="pitch-btn undo" onclick="undoPitch()"><span class="pb-icon">↩️</span>Undo</button>
+    </div>
+    <div class="pitch-stats-grid">
+      <div class="pitch-stat-card"><div class="psc-val" id="p-k">0</div><div class="psc-label">Strikeouts</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-bb">0</div><div class="psc-label">Walks Given</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-ip">0.0</div><div class="psc-label">Inn. Pitched</div></div>
+    </div>
+    <div style="margin-top:10px">
+      <div class="result-section-label">BATTER RESULTS (while pitching)</div>
+      <div class="result-grid hits" style="margin-top:7px">
+        <button class="result-btn out" onclick="logPitcherResult('K')"><span class="rb-icon">🌀</span><span>K</span></button>
+        <button class="result-btn walk" onclick="logPitcherResult('BB')"><span class="rb-icon">🚶</span><span>BB</span></button>
+        <button class="result-btn hit" onclick="logPitcherResult('H')"><span class="rb-icon">💥</span><span>Hit</span></button>
+        <button class="result-btn out" onclick="logPitcherResult('Out')"><span class="rb-icon">⬇️</span><span>Out</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="tab-panel">
+    <div class="ab-log-title" style="margin-bottom:10px">PAST GAMES</div>
+    <div class="history-list" id="historyList">
+      <div class="no-history">No games saved yet.<br>Complete a game and save it to Sheets to build your history.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div id="summary" class="screen">
+  <div class="summary-header">
+    <div style="font-size:44px">🏆</div>
+    <h2>GAME SUMMARY</h2>
+    <p id="summarySubtitle">—</p>
+  </div>
+  <div class="summary-section">
+    <h3>BATTING</h3>
+    <div class="summary-stats">
+      <div class="ss-item"><div class="ss-val" id="sum-ab">0</div><div class="ss-label">AB</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-h">0</div><div class="ss-label">H</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-rbi">0</div><div class="ss-label">RBI</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-r">0</div><div class="ss-label">R</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-2b">0</div><div class="ss-label">2B</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-3b">0</div><div class="ss-label">3B</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-hr">0</div><div class="ss-label">HR</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-bb">0</div><div class="ss-label">BB</div></div>
+    </div>
+    <div style="display:flex;gap:14px;justify-content:center;margin-top:12px">
+      <div class="ss-item"><div class="ss-val" style="color:var(--gold)" id="sum-avg">.000</div><div class="ss-label">AVG</div></div>
+      <div class="ss-item"><div class="ss-val" style="color:var(--gold)" id="sum-obp">.000</div><div class="ss-label">OBP</div></div>
+      <div class="ss-item"><div class="ss-val" style="color:var(--gold)" id="sum-slg">.000</div><div class="ss-label">SLG</div></div>
+    </div>
+  </div>
+  <div class="summary-section hidden" id="pitchingSummary">
+    <h3>PITCHING</h3>
+    <div class="summary-stats">
+      <div class="ss-item"><div class="ss-val" id="sum-pitches">0</div><div class="ss-label">Pitches</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-pk">0</div><div class="ss-label">K</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-pbb">0</div><div class="ss-label">BB</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-ip">0.0</div><div class="ss-label">IP</div></div>
+    </div>
+  </div>
+  <div class="save-status" id="saveStatus"></div>
+  <div class="share-row">
+    <button class="share-btn copy" onclick="copyStats()">📋 COPY</button>
+    <button class="share-btn sheets" onclick="saveToSheets()" id="sheetsBtn">📊 SAVE TO SHEETS</button>
+  </div>
+  <div class="share-row">
+    <button class="share-btn newgame" onclick="newGame()">NEW GAME</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  INDEXEDDB SETUP
+// ══════════════════════════════════════
+const DB_NAME    = 'BaseballTracker';
+const DB_VERSION = 1;
+let db;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('state'))   d.createObjectStore('state');
+      if (!d.objectStoreNames.contains('games'))   d.createObjectStore('games', { keyPath:'id', autoIncrement:true });
+      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings');
+    };
+    req.onsuccess = e => { db = e.target.result; resolve(db); };
+    req.onerror   = e => reject(e);
+  });
+}
+
+function dbPut(store, key, value) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).put(value, key);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e);
+  });
+}
+
+function dbGet(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).get(key);
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e);
+  });
+}
+
+function dbDelete(store, key) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).delete(key);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e);
+  });
+}
+
+function dbGetAll(store) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(store, 'readonly');
+    const req = tx.objectStore(store).getAll();
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror   = e => reject(e);
+  });
+}
+
+function dbAdd(store, value) {
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(store, 'readwrite');
+    const req = tx.objectStore(store).add(value);
+    req.onsuccess = () => resolve();
+    req.onerror   = e => reject(e);
+  });
+}
+
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let state = freshState();
+
+function freshState() {
+  return {
+    playerName:'', opponent:'', trackingMode:'batting',
+    inning:1, currentResult:null, currentRbi:0, currentSb:0, currentRun:0,
+    atBats:[],
+    stats:{ ab:0,h:0,rbi:0,r:0,bb:0,k:0,hbp:0,sac:0,sb:0,doubles:0,triples:0,hr:0 },
+    pitching:{ strikes:0,balls:0,k:0,bb:0,outs:0 },
+    gameActive:false,
+    date: new Date().toLocaleDateString()
+  };
+}
+
+async function saveState() {
+  try { await dbPut('state', 'current', state); } catch(e) {}
+}
+
+async function loadSavedState() {
+  try { return await dbGet('state', 'current'); } catch(e) { return null; }
+}
+
+async function clearSavedState() {
+  try { await dbDelete('state', 'current'); } catch(e) {}
+}
+
+async function getScriptUrl() {
+  try { return (await dbGet('settings', 'scriptUrl')) || ''; } catch(e) { return ''; }
+}
+
+async function setScriptUrl(url) {
+  try { await dbPut('settings', 'scriptUrl', url); } catch(e) {}
+}
+
+async function getToken() {
+  try { return (await dbGet('settings', 'token')) || ''; } catch(e) { return ''; }
+}
+
+async function setToken(token) {
+  try { await dbPut('settings', 'token', token); } catch(e) {}
+}
+
+// ══════════════════════════════════════
+//  SERVICE WORKER REGISTRATION
+// ══════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+// ══════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════
+window.addEventListener('load', async () => {
+  await openDB();
+  const saved = await loadSavedState();
+  if (saved && saved.gameActive) {
+    document.getElementById('restoreBanner').classList.remove('hidden');
+    document.getElementById('restoreName').textContent =
+      saved.playerName + ' vs ' + saved.opponent;
+  }
+  await updateSheetsStatusText();
+  await loadHistory();
+});
+
+async function resumeGame() {
+  const saved = await loadSavedState();
+  if (!saved) return;
+  state = saved;
+  applyStateToUI();
+  showScreen('game');
+}
+
+async function discardSaved() {
+  await clearSavedState();
+  document.getElementById('restoreBanner').classList.add('hidden');
+}
+
+function applyStateToUI() {
+  document.getElementById('displayName').textContent = state.playerName;
+  document.getElementById('displayOpp').textContent  = 'vs ' + state.opponent;
+  document.getElementById('inningNum').textContent   = state.inning;
+  document.getElementById('abInning').textContent    = state.inning;
+  document.getElementById('abNum').textContent       = state.atBats.length + 1;
+  if (state.trackingMode !== 'batting') {
+    document.querySelectorAll('.pitching-tab').forEach(t => t.classList.remove('hidden'));
+  }
+  updateStatsDisplay();
+  updateAbLog();
+  updatePitchDisplay();
+}
+
+// ══════════════════════════════════════
+//  SHEETS MODAL
+// ══════════════════════════════════════
+async function openModal() {
+  document.getElementById('scriptUrlInput').value = await getScriptUrl();
+  document.getElementById('tokenInput').value = await getToken();
+  document.getElementById('sheetsModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('sheetsModal').classList.remove('active');
+}
+
+async function saveScriptUrl() {
+  const url   = document.getElementById('scriptUrlInput').value.trim();
+  const token = document.getElementById('tokenInput').value.trim();
+  if (url && !url.startsWith('https://script.google.com')) {
+    alert("That doesn't look like a Google Apps Script URL.");
+    return;
+  }
+  if (url && !token) {
+    alert("Please enter a secret token. It must match what's in your Apps Script.");
+    return;
+  }
+  await setScriptUrl(url);
+  await setToken(token);
+  await updateSheetsStatusText();
+  closeModal();
+}
+
+async function updateSheetsStatusText() {
+  const url = await getScriptUrl();
+  document.getElementById('sheetsStatusText').textContent =
+    url ? '✅ Google Sheets Connected' : 'Connect Google Sheets';
+}
+
+// ══════════════════════════════════════
+//  SETUP
+// ══════════════════════════════════════
+function selectPos(btn) {
+  document.querySelectorAll('.pos-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.trackingMode = btn.dataset.pos;
+}
+
+async function startGame() {
+  const name = document.getElementById('playerName').value.trim();
+  const opp  = document.getElementById('opponent').value.trim();
+  if (!name) { document.getElementById('playerName').focus(); return; }
+  state = freshState();
+  state.playerName    = name;
+  state.opponent      = opp || 'Opponent';
+  state.gameActive    = true;
+  state.date          = new Date().toLocaleDateString();
+  state.trackingMode  = document.querySelector('.pos-btn.active').dataset.pos;
+  applyStateToUI();
+  await saveState();
+  showScreen('game');
+}
+
+// ══════════════════════════════════════
+//  UI
+// ══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'history') loadHistory();
+}
+
+async function changeInning(d) {
+  state.inning = Math.max(1, state.inning + d);
+  document.getElementById('inningNum').textContent = state.inning;
+  document.getElementById('abInning').textContent  = state.inning;
+  await saveState();
+}
+
+// ══════════════════════════════════════
+//  AT-BAT
+// ══════════════════════════════════════
+function selectResult(btn, result) {
+  document.querySelectorAll('.result-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  state.currentResult = result;
+  const lb = document.getElementById('logAbBtn');
+  lb.disabled = false;
+  lb.textContent = 'LOG AT-BAT →';
+}
+
+function changeExtra(type, delta) {
+  if (type === 'rbi') { state.currentRbi = Math.max(0, state.currentRbi + delta); document.getElementById('rbiVal').textContent = state.currentRbi; }
+  else if (type === 'sb') { state.currentSb = Math.max(0, state.currentSb + delta); document.getElementById('sbVal').textContent = state.currentSb; }
+  else if (type === 'run') { state.currentRun = Math.max(0, state.currentRun + delta); document.getElementById('runVal').textContent = state.currentRun; }
+}
+
+async function logAtBat() {
+  const r = state.currentResult, s = state.stats;
+  const noAb = ['BB','HBP','SAC'];
+  if (!noAb.includes(r)) s.ab++;
+  if (['1B','2B','3B','HR'].includes(r)) s.h++;
+  if (r==='2B') s.doubles++;
+  if (r==='3B') s.triples++;
+  if (r==='HR') s.hr++;
+  if (r==='BB') s.bb++;
+  if (r==='K'||r==='Kc') s.k++;
+  if (r==='HBP') s.hbp++;
+  if (r==='SAC') s.sac++;
+  s.rbi += state.currentRbi;
+  s.sb  += state.currentSb;
+  s.r   += state.currentRun;
+  state.atBats.push({ num:state.atBats.length+1, inning:state.inning, result:r, rbi:state.currentRbi, sb:state.currentSb, run:state.currentRun });
+  updateStatsDisplay();
+  updateAbLog();
+  resetAbEntry();
+  await saveState();
+}
+
+function resetAbEntry() {
+  document.querySelectorAll('.result-btn').forEach(b => b.classList.remove('selected'));
+  state.currentResult = null; state.currentRbi = 0; state.currentSb = 0; state.currentRun = 0;
+  document.getElementById('rbiVal').textContent = '0';
+  document.getElementById('sbVal').textContent  = '0';
+  document.getElementById('runVal').textContent = '0';
+  const lb = document.getElementById('logAbBtn');
+  lb.disabled = true; lb.textContent = 'SELECT A RESULT';
+  document.getElementById('abNum').textContent = state.atBats.length + 1;
+}
+
+function calcRates() {
+  const s = state.stats;
+  const avg = s.ab>0 ? s.h/s.ab : 0;
+  const obpD = s.ab+s.bb+s.hbp+s.sac;
+  const obp  = obpD>0 ? (s.h+s.bb+s.hbp)/obpD : 0;
+  const tb   = s.h+s.doubles+2*s.triples+3*s.hr;
+  const slg  = s.ab>0 ? tb/s.ab : 0;
+  return { avg, obp, slg };
+}
+
+function fmt(n) { return n.toFixed(3).replace(/^0/,''); }
+
+function updateStatsDisplay() {
+  const s=state.stats, r=calcRates();
+  document.getElementById('s-ab').textContent=s.ab; document.getElementById('s-h').textContent=s.h;
+  document.getElementById('s-rbi').textContent=s.rbi; document.getElementById('s-r').textContent=s.r;
+  document.getElementById('s-2b').textContent=s.doubles; document.getElementById('s-3b').textContent=s.triples;
+  document.getElementById('s-hr').textContent=s.hr; document.getElementById('s-bb').textContent=s.bb;
+  document.getElementById('s-k').textContent=s.k; document.getElementById('s-sb').textContent=s.sb;
+  document.getElementById('s-hbp').textContent=s.hbp; document.getElementById('s-sac').textContent=s.sac;
+  document.getElementById('s-avg').textContent=fmt(r.avg);
+  document.getElementById('s-obp').textContent=fmt(r.obp);
+  document.getElementById('s-slg').textContent=fmt(r.slg);
+}
+
+const resultEmoji={'1B':'🟢','2B':'🟡','3B':'🟠','HR':'🔴','K':'🌀','Kc':'👀','GO':'⬇️','FO':'☁️','LO':'⚡','FC':'🔄','BB':'🚶','HBP':'🤕','SAC':'🙏'};
+const resultColor={'1B':'var(--green)','2B':'var(--green)','3B':'var(--green)','HR':'var(--red)','BB':'#74b9ff','HBP':'#fd79a8','SAC':'#fd79a8'};
+
+function updateAbLog() {
+  const list = document.getElementById('abLogList');
+  list.innerHTML = '';
+  if (!state.atBats.length) { list.innerHTML='<div style="color:var(--gray);font-size:14px;text-align:center;padding:20px">No at-bats yet</div>'; return; }
+  [...state.atBats].reverse().forEach(ab => {
+    const div = document.createElement('div');
+    div.className = 'ab-log-item';
+    const extras = [];
+    if (ab.rbi) extras.push(ab.rbi+' RBI');
+    if (ab.run) extras.push('Scored');
+    if (ab.sb)  extras.push(ab.sb+' SB');
+    div.innerHTML = `<div class="ab-log-num">${ab.num}</div><div style="flex:1"><div class="ab-log-result" style="color:${resultColor[ab.result]||'var(--white)'}">${resultEmoji[ab.result]||''} ${ab.result}</div>${extras.length?`<div class="ab-log-extras">${extras.join(' · ')}</div>`:''}</div><div class="ab-log-inn">Inn ${ab.inning}</div>`;
+    list.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════
+//  PITCHING
+// ══════════════════════════════════════
+async function logPitch(type) {
+  if (type==='strike') state.pitching.strikes++; else state.pitching.balls++;
+  updatePitchDisplay(); await saveState();
+}
+
+async function undoPitch() {
+  const p = state.pitching;
+  if (p.strikes+p.balls===0) return;
+  if (p.strikes>0) p.strikes--; else p.balls--;
+  updatePitchDisplay(); await saveState();
+}
+
+async function logPitcherResult(type) {
+  if (type==='K') { state.pitching.k++; state.pitching.outs++; }
+  else if (type==='BB') state.pitching.bb++;
+  else if (type==='Out') state.pitching.outs++;
+  updatePitchDisplay(); await saveState();
+}
+
+function updatePitchDisplay() {
+  const p=state.pitching, total=p.strikes+p.balls;
+  document.getElementById('totalPitches').textContent=total;
+  document.getElementById('strikeCount').textContent=p.strikes;
+  document.getElementById('ballCount').textContent=p.balls;
+  document.getElementById('strikePercent').textContent=total>0?Math.round(p.strikes/total*100)+'%':'–';
+  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+  document.getElementById('p-ip').textContent=ip;
+  document.getElementById('p-k').textContent=p.k;
+  document.getElementById('p-bb').textContent=p.bb;
+}
+
+// ══════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════
+async function loadHistory() {
+  const list = document.getElementById('historyList');
+  try {
+    const games = await dbGetAll('games');
+    if (!games.length) {
+      list.innerHTML = '<div class="no-history">No games saved yet.<br>Complete a game and save it to build your history.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    [...games].reverse().forEach(g => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.innerHTML = `
+        <div class="history-item-header">
+          <div class="history-opp">vs ${g.opponent}</div>
+          <div style="text-align:right"><div class="history-avg">${g.avg}</div><div class="history-date">${g.date}</div></div>
+        </div>
+        <div class="history-stats">
+          <div class="hs-item"><span>${g.ab}</span> AB</div>
+          <div class="hs-item"><span>${g.h}</span> H</div>
+          <div class="hs-item"><span>${g.hr}</span> HR</div>
+          <div class="hs-item"><span>${g.rbi}</span> RBI</div>
+          <div class="hs-item"><span>${g.r}</span> R</div>
+          <div class="hs-item"><span>${g.bb}</span> BB</div>
+          <div class="hs-item"><span>${g.k}</span> K</div>
+          <div class="hs-item"><span>${g.sb}</span> SB</div>
+        </div>`;
+      list.appendChild(div);
+    });
+  } catch(e) {
+    list.innerHTML = '<div class="no-history">Could not load history.</div>';
+  }
+}
+
+// ══════════════════════════════════════
+//  END GAME
+// ══════════════════════════════════════
+function endGame() {
+  const s=state.stats, r=calcRates(), p=state.pitching;
+  document.getElementById('summarySubtitle').textContent = state.playerName+' vs '+state.opponent+' · '+state.date;
+  document.getElementById('sum-ab').textContent=s.ab; document.getElementById('sum-h').textContent=s.h;
+  document.getElementById('sum-rbi').textContent=s.rbi; document.getElementById('sum-r').textContent=s.r;
+  document.getElementById('sum-2b').textContent=s.doubles; document.getElementById('sum-3b').textContent=s.triples;
+  document.getElementById('sum-hr').textContent=s.hr; document.getElementById('sum-bb').textContent=s.bb;
+  document.getElementById('sum-avg').textContent=fmt(r.avg);
+  document.getElementById('sum-obp').textContent=fmt(r.obp);
+  document.getElementById('sum-slg').textContent=fmt(r.slg);
+  if (state.trackingMode!=='batting') {
+    document.getElementById('pitchingSummary').classList.remove('hidden');
+    const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+    document.getElementById('sum-pitches').textContent=p.strikes+p.balls;
+    document.getElementById('sum-pk').textContent=p.k;
+    document.getElementById('sum-pbb').textContent=p.bb;
+    document.getElementById('sum-ip').textContent=ip;
+  }
+  document.getElementById('saveStatus').className='save-status';
+  state.gameActive = false;
+  saveState();
+  showScreen('summary');
+}
+
+// ══════════════════════════════════════
+//  SAVE TO SHEETS + LOCAL HISTORY
+// ══════════════════════════════════════
+async function saveToSheets() {
+  const url   = await getScriptUrl();
+  const token = await getToken();
+  const s=state.stats, r=calcRates(), p=state.pitching;
+  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+
+  // Always save to local history
+  const gameRecord = {
+    date:state.date, player:state.playerName, opponent:state.opponent,
+    ab:s.ab, h:s.h, doubles:s.doubles, triples:s.triples, hr:s.hr,
+    rbi:s.rbi, r:s.r, bb:s.bb, k:s.k, hbp:s.hbp, sac:s.sac, sb:s.sb,
+    avg:fmt(r.avg), obp:fmt(r.obp), slg:fmt(r.slg),
+    pitches:p.strikes+p.balls, pStrikes:p.strikes, pBalls:p.balls,
+    pK:p.k, pBB:p.bb, ip
+  };
+  try { await dbAdd('games', gameRecord); } catch(e) {}
+
+  if (!url) {
+    showStatus('✅ Saved to local history! Connect Google Sheets to also save to the cloud.', 'success');
+    await clearSavedState();
+    return;
+  }
+
+  showStatus('Saving to Google Sheets…', 'loading');
+  document.getElementById('sheetsBtn').disabled = true;
+
+  try {
+    const payload = { ...gameRecord, token };
+    const res  = await fetch(url, { method:'POST', body:JSON.stringify(payload) });
+    const text = await res.text();
+    if (text.includes('success') || res.ok) {
+      showStatus('✅ Saved to Google Sheets and local history!', 'success');
+      await clearSavedState();
+    } else {
+      showStatus('⚠️ Saved locally. Sheets returned an unexpected response. Check your token.', 'error');
+    }
+  } catch(e) {
+    showStatus('📱 Saved locally. No internet — Sheets save failed. Try again later.', 'error');
+  }
+
+  document.getElementById('sheetsBtn').disabled = false;
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.className = 'save-status '+type;
+}
+
+// ══════════════════════════════════════
+//  COPY & NEW GAME
+// ══════════════════════════════════════
+function copyStats() {
+  const s=state.stats, r=calcRates(), p=state.pitching;
+  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+  let text=`⚾ ${state.playerName} vs ${state.opponent} (${state.date})\n`;
+  text+=`AB:${s.ab} H:${s.h} 2B:${s.doubles} 3B:${s.triples} HR:${s.hr}\n`;
+  text+=`RBI:${s.rbi} R:${s.r} BB:${s.bb} K:${s.k} SB:${s.sb}\n`;
+  text+=`AVG:${fmt(r.avg)} OBP:${fmt(r.obp)} SLG:${fmt(r.slg)}`;
+  if (state.trackingMode!=='batting') text+=`\nPitching — ${p.strikes+p.balls} pitches | ${p.k}K | ${p.bb}BB | ${ip} IP`;
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.querySelector('.share-btn.copy');
+    btn.textContent='✅ COPIED!';
+    setTimeout(()=>btn.textContent='📋 COPY',2000);
+  });
+}
+
+async function newGame() {
+  await clearSavedState();
+  state = freshState();
+  document.getElementById('playerName').value='';
+  document.getElementById('opponent').value='';
+  document.getElementById('inningNum').textContent='1';
+  document.getElementById('abNum').textContent='1';
+  document.querySelectorAll('.pitching-tab').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('pitchingSummary').classList.add('hidden');
+  document.getElementById('restoreBanner').classList.add('hidden');
+  document.getElementById('abLogList').innerHTML='<div style="color:var(--gray);font-size:14px;text-align:center;padding:20px">No at-bats yet</div>';
+  updateStatsDisplay(); updatePitchDisplay();
+  switchTab('atbat', document.querySelector('.tab-btn'));
+  showScreen('setup');
+}
+</script>
+</body>
+</html>
