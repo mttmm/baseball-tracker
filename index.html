@@ -351,6 +351,9 @@
 
   <!-- PITCHING TAB -->
   <div id="tab-pitching" class="tab-panel">
+
+    <!-- PITCH COUNT -->
+    <div class="result-section-label" style="margin-top:0">PITCH COUNT</div>
     <div class="pitch-count-display">
       <div class="pitch-big" id="totalPitches">0</div>
       <div class="pitch-big-label">Total Pitches</div>
@@ -363,22 +366,41 @@
     <div class="pitch-btn-row">
       <button class="pitch-btn strike" onclick="logPitch('strike')"><span class="pb-icon">🎯</span>Strike</button>
       <button class="pitch-btn ball" onclick="logPitch('ball')"><span class="pb-icon">❌</span>Ball</button>
-      <button class="pitch-btn undo" onclick="undoPitch()"><span class="pb-icon">↩️</span>Undo</button>
+      <button class="pitch-btn undo" onclick="undoPitch()"><span class="pb-icon">↩️</span>Undo Last</button>
     </div>
-    <div class="pitch-stats-grid">
-      <div class="pitch-stat-card"><div class="psc-val" id="p-k">0</div><div class="psc-label">Strikeouts</div></div>
-      <div class="pitch-stat-card"><div class="psc-val" id="p-bb">0</div><div class="psc-label">Walks Given</div></div>
-      <div class="pitch-stat-card"><div class="psc-val" id="p-ip">0.0</div><div class="psc-label">Inn. Pitched</div></div>
+
+    <div class="separator"></div>
+
+    <!-- BATTER RESULTS -->
+    <div class="result-section-label">BATTER RESULT — tap after each at-bat ends</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:7px;margin-bottom:12px">
+      <button class="result-btn out" onclick="logPitcherResult('K')">
+        <span class="rb-icon">🌀</span><span>K</span><span class="rb-label">Strikeout</span>
+      </button>
+      <button class="result-btn out" onclick="logPitcherResult('Out')">
+        <span class="rb-icon">⬇️</span><span>Out</span><span class="rb-label">Other Out</span>
+      </button>
+      <button class="result-btn walk" onclick="logPitcherResult('BB')">
+        <span class="rb-icon">🚶</span><span>BB</span><span class="rb-label">Walk Given</span>
+      </button>
+      <button class="result-btn hit" onclick="logPitcherResult('H')">
+        <span class="rb-icon">💥</span><span>Hit</span><span class="rb-label">Hit Allowed</span>
+      </button>
     </div>
-    <div style="margin-top:10px">
-      <div class="result-section-label">BATTER RESULTS (while pitching)</div>
-      <div class="result-grid hits" style="margin-top:7px">
-        <button class="result-btn out" onclick="logPitcherResult('K')"><span class="rb-icon">🌀</span><span>K</span></button>
-        <button class="result-btn walk" onclick="logPitcherResult('BB')"><span class="rb-icon">🚶</span><span>BB</span></button>
-        <button class="result-btn hit" onclick="logPitcherResult('H')"><span class="rb-icon">💥</span><span>Hit</span></button>
-        <button class="result-btn out" onclick="logPitcherResult('Out')"><span class="rb-icon">⬇️</span><span>Out</span></button>
-      </div>
+
+    <!-- PITCHING STATS -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:7px">
+      <div class="pitch-stat-card"><div class="psc-val" id="p-ip">0.0</div><div class="psc-label">IP</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-k">0</div><div class="psc-label">K</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-bb">0</div><div class="psc-label">BB</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-h">0</div><div class="psc-label">H</div></div>
     </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">
+      <div class="pitch-stat-card"><div class="psc-val" id="p-total">0</div><div class="psc-label">Pitches</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-strikes-total">0</div><div class="psc-label">Strikes</div></div>
+      <div class="pitch-stat-card"><div class="psc-val" id="p-pct">–</div><div class="psc-label">Strike %</div></div>
+    </div>
+
   </div>
 
   <!-- HISTORY TAB -->
@@ -422,6 +444,7 @@
       <div class="ss-item"><div class="ss-val" id="sum-pk">0</div><div class="ss-label">K</div></div>
       <div class="ss-item"><div class="ss-val" id="sum-pbb">0</div><div class="ss-label">BB</div></div>
       <div class="ss-item"><div class="ss-val" id="sum-ip">0.0</div><div class="ss-label">IP</div></div>
+      <div class="ss-item"><div class="ss-val" id="sum-ph">0</div><div class="ss-label">H Allow.</div></div>
     </div>
   </div>
   <div class="save-status" id="saveStatus"></div>
@@ -512,7 +535,7 @@ function freshState() {
     inning:1, currentResult:null, currentRbi:0, currentSb:0, currentRun:0,
     atBats:[],
     stats:{ ab:0,h:0,rbi:0,r:0,bb:0,k:0,hbp:0,sac:0,sb:0,doubles:0,triples:0,hr:0 },
-    pitching:{ strikes:0,balls:0,k:0,bb:0,outs:0 },
+    pitching:{ strikes:0,balls:0,k:0,bb:0,outs:0,h:0 },
     gameActive:false,
     date: new Date().toLocaleDateString()
   };
@@ -789,22 +812,32 @@ async function undoPitch() {
 }
 
 async function logPitcherResult(type) {
-  if (type==='K') { state.pitching.k++; state.pitching.outs++; }
-  else if (type==='BB') state.pitching.bb++;
-  else if (type==='Out') state.pitching.outs++;
+  if (type==='K')   { state.pitching.k++; state.pitching.outs++; }
+  else if (type==='Out') { state.pitching.outs++; }
+  else if (type==='BB')  { state.pitching.bb++; }
+  else if (type==='H')   { state.pitching.h++; }  // hit allowed — no out
   updatePitchDisplay(); await saveState();
 }
 
 function updatePitchDisplay() {
   const p=state.pitching, total=p.strikes+p.balls;
-  document.getElementById('totalPitches').textContent=total;
-  document.getElementById('strikeCount').textContent=p.strikes;
-  document.getElementById('ballCount').textContent=p.balls;
-  document.getElementById('strikePercent').textContent=total>0?Math.round(p.strikes/total*100)+'%':'–';
-  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
-  document.getElementById('p-ip').textContent=ip;
-  document.getElementById('p-k').textContent=p.k;
-  document.getElementById('p-bb').textContent=p.bb;
+  // Big pitch count display
+  document.getElementById('totalPitches').textContent  = total;
+  document.getElementById('strikeCount').textContent   = p.strikes;
+  document.getElementById('ballCount').textContent     = p.balls;
+  document.getElementById('strikePercent').textContent = total>0 ? Math.round(p.strikes/total*100)+'%' : '–';
+  // Innings pitched: every 3 outs = 1 full inning, remainder shown as .1 or .2
+  const fullInnings = Math.floor(p.outs/3);
+  const partialOuts = p.outs % 3;
+  const ipDisplay   = fullInnings + '.' + partialOuts;
+  // Stat cards
+  document.getElementById('p-ip').textContent          = ipDisplay;
+  document.getElementById('p-k').textContent           = p.k;
+  document.getElementById('p-bb').textContent          = p.bb;
+  document.getElementById('p-h').textContent           = p.h;
+  document.getElementById('p-total').textContent       = total;
+  document.getElementById('p-strikes-total').textContent = p.strikes;
+  document.getElementById('p-pct').textContent         = total>0 ? Math.round(p.strikes/total*100)+'%' : '–';
 }
 
 // ══════════════════════════════════════
@@ -847,6 +880,10 @@ async function loadHistory() {
 // ══════════════════════════════════════
 //  END GAME
 // ══════════════════════════════════════
+function calcIP(outs) {
+  return Math.floor(outs/3) + '.' + (outs%3);
+}
+
 function endGame() {
   const s=state.stats, r=calcRates(), p=state.pitching;
   document.getElementById('summarySubtitle').textContent = state.playerName+' vs '+state.opponent+' · '+state.date;
@@ -859,11 +896,12 @@ function endGame() {
   document.getElementById('sum-slg').textContent=fmt(r.slg);
   if (state.trackingMode!=='batting') {
     document.getElementById('pitchingSummary').classList.remove('hidden');
-    const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+    const ip=calcIP(p.outs);
     document.getElementById('sum-pitches').textContent=p.strikes+p.balls;
     document.getElementById('sum-pk').textContent=p.k;
     document.getElementById('sum-pbb').textContent=p.bb;
     document.getElementById('sum-ip').textContent=ip;
+    document.getElementById('sum-ph').textContent=p.h;
   }
   document.getElementById('saveStatus').className='save-status';
   state.gameActive = false;
@@ -878,7 +916,7 @@ async function saveToSheets() {
   const url   = await getScriptUrl();
   const token = await getToken();
   const s=state.stats, r=calcRates(), p=state.pitching;
-  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+  const ip=calcIP(p.outs);
 
   // Always save to local history
   const gameRecord = {
@@ -887,7 +925,7 @@ async function saveToSheets() {
     rbi:s.rbi, r:s.r, bb:s.bb, k:s.k, hbp:s.hbp, sac:s.sac, sb:s.sb,
     avg:fmt(r.avg), obp:fmt(r.obp), slg:fmt(r.slg),
     pitches:p.strikes+p.balls, pStrikes:p.strikes, pBalls:p.balls,
-    pK:p.k, pBB:p.bb, ip
+    pK:p.k, pBB:p.bb, pH:p.h, ip
   };
   try { await dbAdd('games', gameRecord); } catch(e) {}
 
@@ -928,7 +966,7 @@ function showStatus(msg, type) {
 // ══════════════════════════════════════
 function copyStats() {
   const s=state.stats, r=calcRates(), p=state.pitching;
-  const ip=Math.floor(p.outs/3)+'.'+p.outs%3;
+  const ip=calcIP(p.outs);
   let text=`⚾ ${state.playerName} vs ${state.opponent} (${state.date})\n`;
   text+=`AB:${s.ab} H:${s.h} 2B:${s.doubles} 3B:${s.triples} HR:${s.hr}\n`;
   text+=`RBI:${s.rbi} R:${s.r} BB:${s.bb} K:${s.k} SB:${s.sb}\n`;

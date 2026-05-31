@@ -25,11 +25,9 @@ function doPost(e) {
         "Date", "Player", "Opponent",
         "AB", "H", "2B", "3B", "HR", "RBI", "Runs", "BB", "K", "HBP", "SAC", "SB",
         "AVG", "OBP", "SLG",
-        "Pitches", "Strikes", "Balls", "K (P)", "BB (P)", "IP"
+        "Pitches", "Strikes", "Balls", "K (P)", "BB (P)", "H (P)", "IP"
       ]);
-
-      // Style the header row
-      var headerRange = sheet.getRange(1, 1, 1, 24);
+      var headerRange = sheet.getRange(1, 1, 1, 25);
       headerRange.setBackground("#1B2A4A");
       headerRange.setFontColor("#FFFFFF");
       headerRange.setFontWeight("bold");
@@ -61,10 +59,11 @@ function doPost(e) {
       data.pBalls    || 0,
       data.pK        || 0,
       data.pBB       || 0,
+      data.pH        || 0,
       data.ip        || "0.0"
     ]);
 
-    sheet.autoResizeColumns(1, 24);
+    sheet.autoResizeColumns(1, 25);
 
     return ContentService
       .createTextOutput(JSON.stringify({ status: "success" }))
@@ -77,7 +76,6 @@ function doPost(e) {
   }
 }
 
-// Handles browser test requests — you can ignore this
 function doGet(e) {
   return ContentService
     .createTextOutput("⚾ Baseball Tracker script is running!")
